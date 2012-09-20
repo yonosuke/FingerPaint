@@ -1,8 +1,8 @@
 package sample.application.fingerpaint;
 
-public class Boolean2 {
+public enum Boolean2 {
 	
-	TRUE(true), FASE(false);
+	TRUE(true), FALSE(false);
 	
 	private boolean value = true;
 	
