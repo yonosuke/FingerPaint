@@ -288,7 +288,7 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		
 		if(keyCode == KeyEvent.KEYCODE_BACK){
-			AlertDialog.Builder ab=new AlertDialog.Builder(this);
+			AlertDialog.Builder ab = new AlertDialog.Builder(this);
 			ab.setTitle(R.string.title_exit);
 			ab.setMessage(R.string.confirm_new);
 			ab.setPositiveButton(R.string.button_ok,
