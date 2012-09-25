@@ -13,9 +13,11 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.media.MediaScannerConnection;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.Display;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -24,6 +26,12 @@ import android.widget.ImageView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MenuInflater;
+import android.net.Uri;
+import android.content.Intent;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
 public class FingerPaintActivity extends Activity implements OnTouchListener {
 	public Canvas canvas;
@@ -137,6 +145,7 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 				imageNumber++;
 			} while(file.exists());
 			if(writeImage(file)) {
+				this.scanMedia(file.getPath());
 				SharedPreferences.Editor editor = prefs.edit();
 				editor.putInt("imageNumber", imageNumber);
 				editor.commit();
@@ -147,9 +156,9 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 	private boolean writeImage(File file) {
 		try {
 			FileOutputStream fo = new FileOutputStream(file);
-			bitmap.compress(CompressFormat.PNG, 100, fo);
+			this.bitmap.compress(CompressFormat.PNG, 100, fo);
 			fo.flush();
-			fo.close();
+			fo.close();//©‚Ð‚Ç‚·‚¬‚é Exception‚ÌˆÓ–¡‚ª‚È‚¢ catch‚µ‚Äreturn‚µ‚Ä‚é‚©‚çfinally’Ê‚ç‚È‚¢‰Â”\«‚ ‚è
 		} catch(Exception e) {
 			System.out.println(e.getLocalizedMessage());
 			return false;
@@ -173,12 +182,133 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		switch(item.getItemId()) {
+		switch(item.getItemId()){
 		case R.id.menu_save:
 			save();
+			break;
+		case R.id.menu_open:
+			Intent intent = new Intent(this, FilePicker.class);
+			startActivityForResult(intent, 0);
+			break;
+		case R.id.menu_color_change:
+			final String[] items = getResources().getStringArray(R.array.ColorName);
+			final int[] colors = getResources().getIntArray(R.array.Color);
+			AlertDialog.Builder ab = new AlertDialog.Builder(this);
+			ab.setTitle(R.string.menu_color_change);
+			ab.setItems(items, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int item) {
+					paint.setColor(colors[item]);
+				}
+			});
+			ab.show();
+			break;
+		case R.id.menu_new:
+			ab = new AlertDialog.Builder(this);
+			ab.setTitle(R.string.menu_new);
+			ab.setMessage(R.string.confirm_new);
+			ab.setPositiveButton(R.string.button_ok,
+					new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int which) {
+					canvas.drawColor(Color.WHITE);
+					((ImageView)findViewById(R.id.imageView1)).setImageBitmap(bitmap);
+				}
+			});
+			ab.setNegativeButton(R.string.button_cancel,
+					new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int which) {
+				}
+			}); 
+			ab.show();
 			break;
 		}
 		return super.onOptionsItemSelected(item);
 	}
+	
+	MediaScannerConnection mc;
+	void scanMedia(final String fp){
+		this.mc = new MediaScannerConnection(this,
+				new MediaScannerConnection.MediaScannerConnectionClient(){
+			public void onScanCompleted(String path, Uri uri){
+				disconnect();
+			}
+			public void onMediaScannerConnected() {
+				scanFile(fp);
+			}
+		});
+		this.mc.connect();
+	}
+
+	void scanFile(String fp){mc.scanFile(fp, "image/png");}
+	void disconnect(){mc.disconnect();}
+	
+	Bitmap loadImage(String path){
+		boolean landscape = false;
+		Bitmap bm;
+		BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = true;
+		BitmapFactory.decodeFile(path, options);
+		int oh = options.outHeight;
+		int ow = options.outWidth;
+		if(ow > oh){
+			landscape=true;
+			oh = options.outWidth;
+			ow = options.outHeight;
+		}
+		options.inJustDecodeBounds=false;
+		options.inSampleSize = Math.max(ow/w, oh/h);
+		bm = BitmapFactory.decodeFile(path, options);
+		if(landscape){
+			Matrix matrix = new Matrix();
+			matrix.setRotate(90.0f);
+			bm = Bitmap.createBitmap(bm, 0, 0,
+					bm.getWidth(), bm.getHeight(), matrix, false);
+		}
+		bm = Bitmap.createScaledBitmap(bm,
+				(int)(w), (int)(w*(((double)oh)/((double)ow))), false);
+		Bitmap offBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888); 
+		Canvas offCanvas=new Canvas(offBitmap);
+		offCanvas.drawBitmap(bm, 0, (h-bm.getHeight())/2, null);
+		bm = offBitmap;
+		return bm;
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		if(resultCode == RESULT_OK){
+			this.bitmap = loadImage(data.getStringExtra("fn"));
+			this.canvas = new Canvas(this.bitmap);
+			ImageView iv = (ImageView)this.findViewById(R.id.imageView1);
+			iv.setImageBitmap(this.bitmap);
+		}
+
+	}
+	
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		
+		if(keyCode == KeyEvent.KEYCODE_BACK){
+			AlertDialog.Builder ab=new AlertDialog.Builder(this);
+			ab.setTitle(R.string.title_exit);
+			ab.setMessage(R.string.confirm_new);
+			ab.setPositiveButton(R.string.button_ok,
+					new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int which) {
+					finish();
+				}
+			});
+			ab.setNegativeButton(R.string.button_cancel,
+					new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int which) {
+				}
+			}); 
+			ab.show();
+			return true;
+		}
+
+		return super.onKeyDown(keyCode, event);
+	}
 
 }
+
+
