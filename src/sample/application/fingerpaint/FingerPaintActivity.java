@@ -1,19 +1,29 @@
 package sample.application.fingerpaint;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.text.DecimalFormat;
+
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.MenuInflater;
 
 public class FingerPaintActivity extends Activity implements OnTouchListener {
 	public Canvas canvas;
@@ -24,6 +34,8 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 	public Float y1; //プリミティブをつかわずにラッパークラスでストイックに
 	public Integer w; //プリミティブをつかわずにラッパークラスでストイックに
 	public Integer h; //プリミティブをつかわずにラッパークラスでストイックに
+	
+	
 	
 /*	public boolean onTouch(View v, MotionEvent event){ //実体を持つのでabstractをトル
 		//return Boolean.valueOf(true);//参照型にこだわってストイックに書くとこうなるBOXING とりまtrue
@@ -77,7 +89,8 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 		iv.setOnTouchListener(this);
 	}
 	
-	public boolean onTouch(View v, MotionEvent event) {
+	//@Override
+	public boolean onTouch(View v, MotionEvent event){
 		float x = event.getX(); //タッチ位置の座標を取得
 		float y = event.getY(); //タッチ位置の座標を取得
 		switch (event.getAction()){ //アクションの種類を取得して分岐処理
@@ -107,6 +120,65 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 		return true;
 	}
 	
+	void save() {
+		
+		SharedPreferences prefs = getSharedPreferences("FingerPaintPreferences", MODE_PRIVATE);
+		int imageNumber = prefs.getInt("imageNumber", 1);
+		File file = null;
+		
+		if (externalMedisChecker()) {
+			DecimalFormat form = new DecimalFormat("0000");
+			String path = Environment.getExternalStorageDirectory() + "/mypaint/";
+			File outDir = new File(path);
+			if(!outDir.exists());
+			
+			do {
+				file = new File(path + "img" +form.format(imageNumber) + ".png");
+				imageNumber++;
+			} while(file.exists());
+			if(writeImage(file)) {
+				SharedPreferences.Editor editor = prefs.edit();
+				editor.putInt("imageNumber", imageNumber);
+				editor.commit();
+			}
+		}
+	}
+
+	private boolean writeImage(File file) {
+		try {
+			FileOutputStream fo = new FileOutputStream(file);
+			bitmap.compress(CompressFormat.PNG, 100, fo);
+			fo.flush();
+			fo.close();
+		} catch(Exception e) {
+			System.out.println(e.getLocalizedMessage());
+			return false;
+		}
+		return true;
+	}
+
+	private boolean externalMedisChecker() {
+		boolean result = false;
+		String status = Environment.getExternalStorageState();
+		if(status.equals(Environment.MEDIA_MOUNTED))result = true;
+		return result;
+	}
 	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater mi = getMenuInflater();
+		mi.inflate(R.menu.menu, menu);
+		return super.onCreateOptionsMenu(menu);
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch(item.getItemId()) {
+		case R.id.menu_save:
+			save();
+			break;
+		}
+		return super.onOptionsItemSelected(item);
+	}
 
 }
