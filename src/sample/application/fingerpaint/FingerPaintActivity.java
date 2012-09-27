@@ -117,29 +117,26 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 			this.path.moveTo(x, y);
 			break;
 		case MotionEvent.ACTION_UP:
-			if(x == x1 && y == y1)y1 = y1 + 1;
+			if(x == this.x1 && y == this.y1)this.y1 = this.y1 + 1;
 			this.path.quadTo(x1, y1, x, y);
 			this.canvas.drawPath(this.path, this.paint);
 			this.path.reset();
 			break;
 		}
-		ImageView iv = (ImageView)this.findViewById(R.id.imageView1);
-		iv.setImageBitmap(bitmap); //ImageViewに表示
+		ImageView iv = (ImageView) this.findViewById(R.id.imageView1);
+		iv.setImageBitmap(this.bitmap); //ImageViewに表示
 		return true;
 	}
 	
 	void save() {
-		
-		SharedPreferences prefs = getSharedPreferences("FingerPaintPreferences", MODE_PRIVATE);
+		SharedPreferences prefs = this.getSharedPreferences("FingerPaintPreferences", MODE_PRIVATE);
 		int imageNumber = prefs.getInt("imageNumber", 1);
 		File file = null;
-		
 		if (externalMedisChecker()) {
 			DecimalFormat form = new DecimalFormat("0000");
 			String path = Environment.getExternalStorageDirectory() + "/mypaint/";
 			File outDir = new File(path);
 			if(!outDir.exists());
-			
 			do {
 				file = new File(path + "img" +form.format(imageNumber) + ".png");
 				imageNumber++;
@@ -153,11 +150,11 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 		}
 	}
 
-	private boolean writeImage(File file) {
+	private boolean writeImage(File file) { //書き換える
 		try {
 			FileOutputStream fo = new FileOutputStream(file);
 			this.bitmap.compress(CompressFormat.PNG, 100, fo);
-			fo.flush();
+			fo.flush();//これに引っかかったらしたのcatch節
 			fo.close();//←ひどすぎる Exceptionの意味がない catchしてreturnしてるからfinally通らない可能性あり
 		} catch(Exception e) {
 			System.out.println(e.getLocalizedMessage());
@@ -184,22 +181,23 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch(item.getItemId()){
 		case R.id.menu_save:
-			save();
+			this.save();
 			break;
 		case R.id.menu_open:
 			Intent intent = new Intent(this, FilePicker.class);
-			startActivityForResult(intent, 0);
+			this.startActivityForResult(intent, 0);
 			break;
 		case R.id.menu_color_change:
-			final String[] items = getResources().getStringArray(R.array.ColorName);
-			final int[] colors = getResources().getIntArray(R.array.Color);
+			final String[] items = this.getResources().getStringArray(R.array.ColorName);
+			final int[] colors = this.getResources().getIntArray(R.array.Color);
 			AlertDialog.Builder ab = new AlertDialog.Builder(this);
 			ab.setTitle(R.string.menu_color_change);
 			ab.setItems(items, new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int item) {
 					paint.setColor(colors[item]);
 				}
-			});
+			}
+						);
 			ab.show();
 			break;
 		case R.id.menu_new:
@@ -208,16 +206,18 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 			ab.setMessage(R.string.confirm_new);
 			ab.setPositiveButton(R.string.button_ok,
 					new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int which) {
-					canvas.drawColor(Color.WHITE);
-					((ImageView)findViewById(R.id.imageView1)).setImageBitmap(bitmap);
-				}
-			});
+						public void onClick(DialogInterface dialog, int which) {
+								canvas.drawColor(Color.WHITE);
+									((ImageView)findViewById(R.id.imageView1)).setImageBitmap(bitmap);
+						}
+					}
+			);
 			ab.setNegativeButton(R.string.button_cancel,
 					new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int which) {
-				}
-			}); 
+						public void onClick(DialogInterface dialog, int which) {
+						}
+					}
+			); 
 			ab.show();
 			break;
 		}
@@ -225,9 +225,8 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 	}
 	
 	MediaScannerConnection mc;
-	void scanMedia(final String fp){
-		this.mc = new MediaScannerConnection(this,
-				new MediaScannerConnection.MediaScannerConnectionClient(){
+	void scanMedia(final String fp){ //finalついてます　インナークラスでかえられたくないから
+		this.mc = new MediaScannerConnection(this, new MediaScannerConnection.MediaScannerConnectionClient(){
 			public void onScanCompleted(String path, Uri uri){
 				disconnect();
 			}
@@ -238,8 +237,13 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 		this.mc.connect();
 	}
 
-	void scanFile(String fp){mc.scanFile(fp, "image/png");}
-	void disconnect(){mc.disconnect();}
+	void scanFile(String fp){
+		this.mc.scanFile(fp, "image/png");
+	}
+	
+	void disconnect(){
+		this.mc.disconnect();
+	}
 	
 	Bitmap loadImage(String path){
 		boolean landscape = false;
@@ -266,7 +270,7 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 		bm = Bitmap.createScaledBitmap(bm,
 				(int)(w), (int)(w*(((double)oh)/((double)ow))), false);
 		Bitmap offBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888); 
-		Canvas offCanvas=new Canvas(offBitmap);
+		Canvas offCanvas = new Canvas(offBitmap);
 		offCanvas.drawBitmap(bm, 0, (h-bm.getHeight())/2, null);
 		bm = offBitmap;
 		return bm;
@@ -281,7 +285,6 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 			ImageView iv = (ImageView)this.findViewById(R.id.imageView1);
 			iv.setImageBitmap(this.bitmap);
 		}
-
 	}
 	
 	@Override
@@ -291,24 +294,22 @@ public class FingerPaintActivity extends Activity implements OnTouchListener {
 			AlertDialog.Builder ab = new AlertDialog.Builder(this);
 			ab.setTitle(R.string.title_exit);
 			ab.setMessage(R.string.confirm_new);
-			ab.setPositiveButton(R.string.button_ok,
-					new DialogInterface.OnClickListener() {
+			ab.setPositiveButton(R.string.button_ok,new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int which) {
 					finish();
 				}
-			});
-			ab.setNegativeButton(R.string.button_cancel,
-					new DialogInterface.OnClickListener() {
+			}
+			);
+			ab.setNegativeButton(R.string.button_cancel,new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int which) {
 				}
-			}); 
+			}
+			); 
 			ab.show();
 			return true;
 		}
-
 		return super.onKeyDown(keyCode, event);
 	}
-
 }
 
 

@@ -24,21 +24,21 @@ public class FilePicker extends ListActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.filelist);
+		this.setContentView(R.layout.filelist);
 		this.externalStorageDir = Environment.getExternalStorageDirectory().toString();
-		SharedPreferences pref=this.getSharedPreferences("FilePickerPrefs", MODE_PRIVATE);
+		SharedPreferences pref = this.getSharedPreferences("FilePickerPrefs", MODE_PRIVATE);
 		this.dir = pref.getString("Folder",this.externalStorageDir+"/mypaint");
-		makeFileFilter();
-		makeComparator();
-		showList();
+		this.makeFileFilter();
+		this.makeComparator();
+		this.showList();
 		}
 	
 	@Override
 	protected void onStop() {
 		super.onStop();
 		SharedPreferences pref = this.getSharedPreferences("FilePickerPrefs", MODE_PRIVATE);
-		SharedPreferences.Editor editor=pref.edit();
-				    editor.putString("Folder", dir);
+		SharedPreferences.Editor editor = pref.edit();
+				    editor.putString("Folder", this.dir);
 				    editor.commit();
 				    
 	}
@@ -56,7 +56,7 @@ public class FilePicker extends ListActivity {
 		}
 	
 	void makeComparator(){
-		this.comparator = new Comparator<Object>(){
+		this.comparator = new Comparator<Object>(){ //ComparatorÇÕInterfaceÅ@Ç≈Ç‡newÇµÇƒÇÈ
 		    public int compare(Object object1, Object object2) {
 		      int pad1 = 0;
 		      int pad2 = 0;
@@ -68,13 +68,11 @@ public class FilePicker extends ListActivity {
 		    }
 		  };
 		}
-	
 
-	
 	void showList(){
 		  if(!Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) 
-		    finish();
-		  File file = new File(dir);
+			  this.finish();
+		  File file = new File(this.dir);
 		  if(!file.exists()){
 			  this.dir = externalStorageDir;
 		    file = new File(this.dir);
@@ -83,7 +81,7 @@ public class FilePicker extends ListActivity {
 		  File[] fc = file.listFiles(this.fFilter);
 		  final FileListAdapter adapter = new FileListAdapter(this,fc);
 		  adapter.sort(this.comparator);
-		  ListView lv = (ListView)findViewById(android.R.id.list);
+		  ListView lv = (ListView) this.findViewById(android.R.id.list);
 		  lv.setAdapter(adapter);
 		  lv.setOnItemClickListener(new OnItemClickListener() {
 			    public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
@@ -99,16 +97,16 @@ public class FilePicker extends ListActivity {
 			    }
 			  });
 			    if(this.dir.equals(Environment.getExternalStorageDirectory().toString())){
-			    findViewById(R.id.button1).setEnabled(false);
+			    	this.findViewById(R.id.button1).setEnabled(false);
 			  }else{
-			    findViewById(R.id.button1).setEnabled(true);
+				  this.findViewById(R.id.button1).setEnabled(true);
 			  }
 			}
 		  
 	
 	public void upButtonClick(View v) {
 		this.dir = new File(this.dir).getParent();
-		  showList();
+		this.showList();
 		}
 	
 }
